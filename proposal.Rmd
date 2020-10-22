@@ -9,3 +9,44 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Data Sets
+[120 Years of Olympic History](https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results?select=athlete_events.csv)
+
+[GDP data from The World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD)
+
+## Motivation of Study
+
+
+## Overview
+The Olympic dataset was uploaded to Kaggle by Randi Griffin, a data scientist from Massachusetts. Her LinkedIn is [here](https://www.linkedin.com/in/randigriffin/), where her merits are well explained. Due to her background, we feel that this is a reliable and accurate dataset.
+
+On the Kaggle page, there are two data files. One is the main file, containing information from the Olympic Games from Athens 1896 to Rio 2016. It contains Athlete ID, name, sex, age, height, weight, team, country code, olympic game, season, year, city, sport, event, and medal won. The second file gives the full country name for each country code used in the main dataset. This dataset is in tidy format.
+
+A second dataset was found to bolster our analysis. Obtained from the World Bank, a csv file containing the GDP of countries (in USD) from 1960 to 2019 was added. This dataset will allow us to also evaluate how a country's economy effects the Olympics. The GDP data is not in a tidy format, since years are used as columns.
+
+## Plan for Analysis
+We will use the following questions for our analysis:
+
+1. How are medals distributed among countries over the history of the games?
+
+2. How does hosting the Olympics correlate with the host country winning medals?
+
+3. How has the gender gap changed over time?
+
+4. Are there any missing years, if so, why?
+
+5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
+
+6. How has age of participants changed over time and across seasons?
+
+7. Is the a correlation of height and weight in events?
+
+8. How do countries perform in Summer vs Winter?
+
+9. How do the Individual Olympic Athletes perform?
+
+10. What Olympic events have stayed around, which have been removed?
+
+11. Who are the most decorated Olympians?
+
+12. How does GDP effect a country's performance?
