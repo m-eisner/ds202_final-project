@@ -15,7 +15,11 @@ knitr::opts_chunk$set(echo = TRUE)
 [GDP data from The World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD)
 
 ## Motivation of Study
+With the 2020 Olympic Games being postponed to 2021 due to the COVID-19 Pandemic, it will be a year before the world can enjoy the sporting event. However, in the meantime, it is the perfect time to analyze all previous Olympic Games (of the modern era) to get excited for next year.
 
+There are many implications that come with the Olympic Games. These include social issues, economic growth and geopolitical tensions. All these statistics can be found in the datasets we found. We hope to get a better understanding of how all these things get affected each year and what part the games play in all of it.
+
+It is also a great chance to see how athletic performance has improved (or not improved) over time. It is exciting to track how records are being broken, and by whom they are being broken. Overall, this data provides loads of information to experiment with and learn practical data science skills from.
 
 ## Overview
 The Olympic dataset was uploaded to Kaggle by Randi Griffin, a data scientist from Massachusetts. Her LinkedIn is [here](https://www.linkedin.com/in/randigriffin/), where her merits are well explained. Due to her background, we feel that this is a reliable and accurate dataset.
