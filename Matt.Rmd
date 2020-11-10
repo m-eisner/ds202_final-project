@@ -1,0 +1,61 @@
+---
+title: "Questions 11 and 12"
+author: "Matthew Eisner"
+date: "11/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+library(knitr)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+```{r}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+codes <- read.csv('noc_regions.csv', stringsAsFactors = FALSE)
+gdp <- read.csv('world_bank_gdp.csv', stringsAsFactors = FALSE, check.names = FALSE, fileEncoding = 'UTF-8-BOM')
+
+gdp <- gdp %>% 
+  select(-`Indicator Name`, -`Indicator Code`, -`2020`) %>%
+  pivot_longer(as.character(1960:2019), names_to='Year', values_to='GDP')
+
+codes <- codes %>% 
+  select(-notes) %>%
+  rename(`Country Name` = region)
+
+olympics <- olympics %>% 
+  left_join(codes, by='NOC') %>%
+  mutate(Medal = replace_na(Medal, 'No medal'))
+olympics$Name <- as.factor(olympics$Name)
+```
+
+11. Who are the most decorated Olympians?
+
+```{r}
+medals <- olympics %>%
+  group_by(Name) %>%
+  summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+
+medals <- aggregate(. ~  Name, data=medals, sum)
+medals %>% 
+  filter(Total>10) %>%
+  select(-Total) %>%
+  pivot_longer(c('Gold', 'Silver', 'Bronze'), names_to='Type', values_to='Amount') %>%
+  ggplot(aes(x=Name, weight=Amount, fill=Type)) + geom_bar() + coord_flip()
+
+```
+
+12. How does GDP effect a country's performance?
