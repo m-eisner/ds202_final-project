@@ -108,7 +108,7 @@ ggplot(joined, aes(x=avg_GDP, y=avg_medals)) +
   geom_smooth(method='lm', se=F) +
   geom_label_repel(data=subset(joined, avg_medals>50 | avg_GDP>2*10^12), 
                    aes(label=`Country Name`)) +
-  xlab('Average GDP During Year of Olympics') +
+  xlab('Average GDP During Year of Olympics (USD)') +
   ylab('Average Medals Won') +
   labs(title='Average GDP vs Average Meadals Won')
 
@@ -117,7 +117,7 @@ ggplot(filter(joined, `Country Name`!='United States'), aes(x=avg_GDP, y=avg_med
   geom_smooth(method='lm', se=F) +
   geom_label_repel(data=filter(subset(joined, avg_medals>35 | avg_GDP>1*10^12), `Country Name`!='United States'), 
                    aes(label=`Country Name`)) +
-  xlab('Average GDP During Year of Olympics') +
+  xlab('Average GDP During Year of Olympics (USD)') +
   ylab('Average Medals Won') +
   labs(title='Average GDP vs Average Meadals Won',
        subtitle='Without United States Data')
