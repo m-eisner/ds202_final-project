@@ -18,6 +18,7 @@ library(tidyverse)
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(ggrepel)
 ```
 
 ```{r}
@@ -27,11 +28,28 @@ gdp <- read.csv('world_bank_gdp.csv', stringsAsFactors = FALSE, check.names = FA
 
 gdp <- gdp %>% 
   select(-`Indicator Name`, -`Indicator Code`, -`2020`) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Russian Federation', 'Russia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Yemen, Rep.', 'Yemen')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Congo, Rep.', 'Republic of Congo')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Congo, Dem. Rep.', 'Democratic Republic of the Congo')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Bahamas, The', 'Bahamas')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Egypt, Arab Rep.', 'Egypt')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Iran, Islamic Rep.', 'Iran')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Virgin Islands (U.S.)', 'Virgin Islands, US')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Kyrgyz Republic', 'Kyrgyzstan')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Korea, Rep.', 'South Korea')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Korea, Dem. People’s Rep.', 'North Korea')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Slovak Republic', 'Slovakia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Syrian Arab Republic', 'Syria')) %>%
   pivot_longer(as.character(1960:2019), names_to='Year', values_to='GDP')
+gdp$Year <- as.numeric(gdp$Year)
 
 codes <- codes %>% 
   select(-notes) %>%
-  rename(`Country Name` = region)
+  rename(`Country Name` = region) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Boliva', 'Bolivia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'UK', 'United Kingdom')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'USA', 'United States'))
 
 olympics <- olympics %>% 
   left_join(codes, by='NOC') %>%
@@ -50,12 +68,58 @@ medals <- olympics %>%
             Total = Gold + Silver + Bronze)
 
 medals <- aggregate(. ~  Name, data=medals, sum)
+
 medals %>% 
   filter(Total>10) %>%
   select(-Total) %>%
   pivot_longer(c('Gold', 'Silver', 'Bronze'), names_to='Type', values_to='Amount') %>%
-  ggplot(aes(x=Name, weight=Amount, fill=Type)) + geom_bar() + coord_flip()
-
+  ggplot(aes(x=Name, weight=Amount, fill=Type)) + 
+  geom_bar() + 
+  coord_flip() +
+  xlab('Olympian') +
+  ylab('Number of Medals') +
+  ggtitle('Most Decorated Olympians') +
+  scale_fill_manual(breaks=c('Gold', 'Silver', 'Bronze'), 
+    values=c("Gold"="#FFD700", "Silver"="#aaa9ad", "Bronze"="#cd7f32"))
 ```
 
 12. How does GDP effect a country's performance?
+
+```{r}
+country_medals <- olympics %>%
+  filter(Year >= 1960) %>%
+  group_by(`Country Name`, Year) %>%
+  summarize(`Country Code` = NOC,
+            Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+country_medals <- aggregate(. ~  `Country Name`+Year+`Country Code`, data=country_medals, sum)
+
+joined <- country_medals %>%
+  left_join(gdp, by=c('Country Name', 'Year')) %>%
+  select(`Country Name`, Year, Total, GDP) %>%
+  drop_na() %>%
+  group_by(`Country Name`) %>%
+  summarize(avg_GDP = mean(GDP), avg_medals=mean(Total))
+  
+ggplot(joined, aes(x=avg_GDP, y=avg_medals)) + 
+  geom_point() + 
+  geom_smooth(method='lm', se=F) +
+  geom_label_repel(data=subset(joined, avg_medals>50 | avg_GDP>2*10^12), 
+                   aes(label=`Country Name`)) +
+  xlab('Average GDP During Year of Olympics') +
+  ylab('Average Medals Won') +
+  labs(title='Average GDP vs Average Meadals Won')
+
+ggplot(filter(joined, `Country Name`!='United States'), aes(x=avg_GDP, y=avg_medals)) + 
+  geom_point() + 
+  geom_smooth(method='lm', se=F) +
+  geom_label_repel(data=filter(subset(joined, avg_medals>35 | avg_GDP>1*10^12), `Country Name`!='United States'), 
+                   aes(label=`Country Name`)) +
+  xlab('Average GDP During Year of Olympics') +
+  ylab('Average Medals Won') +
+  labs(title='Average GDP vs Average Meadals Won',
+       subtitle='Without United States Data')
+```
+
