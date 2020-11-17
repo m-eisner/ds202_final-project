@@ -1,0 +1,82 @@
+---
+title: "Cody"
+author: "Cody Nielsen"
+date: "11/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+```{r}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+head(olympics,10)
+```
+
+7. Is the a correlation of height and weight in events?
+```{r}
+height<-olympics%>%group_by(Height)%>%summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+weight<-olympics%>%group_by(Weight)%>%summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+head(height,10)
+head(weight,10)
+ggplot(height,aes(x=Height,y=Total))+geom_bar(stat = "identity")
+ggplot(weight,aes(x=Weight,y=Total))+geom_bar(stat = "identity")
+```
+I learned that a competitor with a height of 175 in the Olympics wins more medals than people who are taller or shorter than the 175 middle value. For the weight it appears that people who are on the lighter side meaning between 60-80 is more likely to win than people weighing more than 100.
+
+8. How do countries perform in Summer vs Winter?
+```{r}
+summer <- olympics %>% filter(Season == "Summer")
+winter <- olympics %>% filter(Season == "Winter")
+summerTeams <- summer %>% group_by(Team) %>% summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+summerTeams <- aggregate(. ~  Team, data=summerTeams, sum)
+winterTeams <- winter %>% group_by(Team) %>% summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+winterTeams <- aggregate(. ~  Team, data=winterTeams, sum)
+summerTeams1 <- summerTeams[1:60,]
+summerTeams2 <- summerTeams[61:120,]
+summerTeams3 <- summerTeams[121:180,]
+summerTeams4 <- summerTeams[181:240,]
+summerTeams5 <- summerTeams[241:300,]
+summerTeams6 <- summerTeams[301:360,]
+summerTeams7 <- summerTeams[361:420,]
+summerTeams8 <- summerTeams[421:480,]
+winterTeams1 <- winterTeams[1:35,]
+winterTeams2 <- winterTeams[36:77,]
+ggplot(summerTeams1, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals First 60")
+ggplot(summerTeams2, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Second 60")
+ggplot(summerTeams3, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Third 60")
+ggplot(summerTeams4, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Fourth 60")
+ggplot(summerTeams5, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Fifth 60")
+ggplot(summerTeams6, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Sixth 60")
+ggplot(summerTeams7, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Seventh 60")
+ggplot(summerTeams8, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Last 60")
+ggplot(winterTeams1, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals First 60")
+ggplot(winterTeams2, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals Last 60")
+summerTotals <- summerTeams %>% rename('Summer Total'=Total)
+winterTotals <- winterTeams %>% rename('Winter Total'=Total)
+Totals <- full_join(summerTotals,winterTotals)
+Totals1<-Totals[1:60,]
+ggplot(Totals1,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+```
+I learned that there are a lot more countries that have or still currently participate in the summer Olympics compared to the winter Olympics. 
