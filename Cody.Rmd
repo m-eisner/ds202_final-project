@@ -75,8 +75,23 @@ ggplot(winterTeams1, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(ax
 ggplot(winterTeams2, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals Last 60")
 summerTotals <- summerTeams %>% rename('Summer Total'=Total)
 winterTotals <- winterTeams %>% rename('Winter Total'=Total)
-Totals <- full_join(summerTotals,winterTotals)
+Totals <- full_join(summerTotals,winterTotals,by="Team")
+summary(Totals)
 Totals1<-Totals[1:60,]
+Totals2<-Totals[61:120,]
+Totals3<-Totals[121:180,]
+Totals4<-Totals[181:240,]
+Totals5<-Totals[241:300,]
+Totals6<-Totals[301:360,]
+Totals7<-Totals[361:420,]
+Totals8<-Totals[421:480,]
 ggplot(Totals1,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals2,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals3,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals4,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals5,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals6,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals7,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
+ggplot(Totals8,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
 ```
 I learned that there are a lot more countries that have or still currently participate in the summer Olympics compared to the winter Olympics. 
