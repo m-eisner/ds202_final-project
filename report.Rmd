@@ -1,0 +1,49 @@
+---
+title: "Final Project Report"
+author: "Matthew Eisner, Jeffrey Kinard, Cody Nielsen, Muhammed Idris, Patrick Origer, Zachary Johnson"
+date: "11/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+library(knitr)
+```
+
+## Background
+
+## Data Aquisition and Cleaning
+
+## Exploratory Analysis
+
+## Vizualizing the Data 
+
+## Questions Raised
+
+### Question 1. How are medals distributed among countries over the history of the games?
+
+### Question 2. How does hosting the Olympics correlate with the host country winning medals?
+
+### Question 3. How has the gender gap changed over time?
+
+### Question 4. Are there any missing years, if so, why?
+
+### Question 5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
+
+### Question 6. How has age of participants changed over time and across seasons?
+
+### Question 7. Is the a correlation of height and weight in events?
+
+### Question 8. How do countries perform in Summer vs Winter?
+
+### Question 9. How do the Individual Olympic Athletes perform?
+
+### Question 10. What Olympic events have stayed around, which have been removed?
+
+### Question 11. Who are the most decorated Olympians?
+
+### Question 12. How does GDP effect a country's performance?
+
+## Conclusion
