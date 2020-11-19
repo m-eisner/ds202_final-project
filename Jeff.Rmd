@@ -124,9 +124,13 @@ medal_data <- clean_data %>%
                unique(), by='region') %>% 
   right_join(top_12, by="region")
 
+cbPalette <- c("#cd7f32", "#bec2cb", "#d4af37")
+medal_data$Medal <- medal_data$Medal %>% factor(levels = c("Bronze", "Silver", "Gold"))
 medal_data %>% 
   ggplot(aes(x=Year, y=count, color=Medal)) + 
-  geom_line() + facet_wrap(~region)
+  scale_color_manual(values=cbPalette) + 
+  geom_line() + 
+  facet_wrap(~region)
 ```
   
 **2. How does hosting the Olympics correlate with the host country winning medals?**
@@ -145,7 +149,7 @@ host_data <- clean_data %>% left_join(countries, by="City") %>%
 
 host_avg <- host_data %>% filter(Team==Country) %>% select(Team, Medal, Year) %>% group_by(Team, Medal, Year) %>% summarise(count=n()) %>% ungroup() %>% group_by(Team, Medal) %>% summarise(count=mean(count)) 
 
-host_avg %>% 
+host_v_total <- host_avg %>% 
   left_join(clean_data %>% 
               select(Team, Year, Medal) %>% 
               group_by(Team, Medal, Year) %>% 
@@ -154,7 +158,12 @@ host_avg %>%
               group_by(Team, Medal) %>% 
               summarise(total_avg=mean(count)), by=c('Team', 'Medal')) %>% 
   rename(host_avg="count") %>% 
-  pivot_longer(c(host_avg, total_avg), names_to = "count_avg", values_to = "counts")%>% 
+  pivot_longer(c(host_avg, total_avg), names_to = "count_avg", values_to = "counts") 
+
+cbPalette <- c("#cd7f32", "#bec2cb", "#d4af37")
+host_v_total$Medal <- host_v_total$Medal %>% factor(levels = c("Bronze", "Silver", "Gold"))
+host_v_total %>% 
   ggplot(aes(x=count_avg, y=counts, fill=Medal)) + geom_bar(stat='identity') + 
-  facet_wrap(~Team)
+  facet_wrap(~Team) + 
+  scale_fill_manual(values=cbPalette)
 ```
