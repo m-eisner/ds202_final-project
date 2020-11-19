@@ -63,16 +63,27 @@ summerTeams7 <- summerTeams[361:420,]
 summerTeams8 <- summerTeams[421:480,]
 winterTeams1 <- winterTeams[1:35,]
 winterTeams2 <- winterTeams[36:77,]
-ggplot(summerTeams1, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals First 60")
-ggplot(summerTeams2, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Second 60")
-ggplot(summerTeams3, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Third 60")
-ggplot(summerTeams4, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Fourth 60")
-ggplot(summerTeams5, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Fifth 60")
-ggplot(summerTeams6, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Sixth 60")
-ggplot(summerTeams7, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Seventh 60")
-ggplot(summerTeams8, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Summer Countries Totals Last 60")
-ggplot(winterTeams1, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals First 60")
-ggplot(winterTeams2, aes(x=Team,y=Total)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals Last 60")
+summerTotals <- summerTeams %>% rename('Summer Total'=Total)
+winterTotals <- winterTeams %>% rename('Winter Total'=Total)
+Totals <- full_join(summerTotals,winterTotals,by="Team")
+Totals1<-Totals[1:60,]
+Totals2<-Totals[61:120,]
+Totals3<-Totals[121:180,]
+Totals4<-Totals[181:240,]
+Totals5<-Totals[241:300,]
+Totals6<-Totals[301:360,]
+Totals7<-Totals[361:420,]
+Totals8<-Totals[421:480,]
+ggplot(Totals1, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals First 60")
+ggplot(Totals2, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Second 60")
+ggplot(Totals3, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Third 60")
+ggplot(Totals4, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Fourth 60")
+ggplot(Totals5, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Fifth 60")
+ggplot(Totals6, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Sixth 60")
+ggplot(Totals7, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Seventh 60")
+ggplot(Totals8, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Countries Totals Last 60")
+ggplot(winterTeams1, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals First 60")
+ggplot(winterTeams2, aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle=90)) + ggtitle("Winter Countries Totals Last 60")
 summerTotals <- summerTeams %>% rename('Summer Total'=Total)
 winterTotals <- winterTeams %>% rename('Winter Total'=Total)
 Totals <- full_join(summerTotals,winterTotals,by="Team")
