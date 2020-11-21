@@ -12,9 +12,19 @@ knitr::opts_chunk$set(warning = FALSE)
 library(knitr)
 ```
 
+```{r imports, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggrepel)
+```
+
 ## Background
 
 ## Data Aquisition and Cleaning
+The main dataset used for this project is [120 Years of Olympic History](https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results?select=athlete_events.csv), obtained from Kaggle. A supplemental dataset, [GDP data from The World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD), was added in order to bolster our analysis. In the Olympic dataset, there are two data files. One is the main file, containing information from the Olympic Games from Athens 1896 to Rio 2016. It contains Athlete ID, name, sex, age, height, weight, team, country code, Olympic game, season, year, city, sport, event, and medal won. The second file gives the full country name for each country code used in the main dataset. This dataset is in tidy format. Since the Olympic dataset was very rich, it was decided that each team member would individually clean and filter the data to fit their analyses. The GDP data is a csv file containing the GDP of countries (in USD) from 1960 to 2019. This dataset will allow us to also evaluate how a country's economy effects the Olympics. The GDP data is not in a tidy format, since years are used as columns. In addition, many of the country names and country codes used in the GDP file did not match the Olympics dataset. These issue had to be resolved in order to merge the datasets and perform analyses. 
 
 ## Exploratory Analysis
 
@@ -22,28 +32,135 @@ library(knitr)
 
 ## Questions Raised
 
-### Question 1. How are medals distributed among countries over the history of the games?
+1. How are medals distributed among countries over the history of the games?
 
-### Question 2. How does hosting the Olympics correlate with the host country winning medals?
+2. How does hosting the Olympics correlate with the host country winning medals?
 
-### Question 3. How has the gender gap changed over time?
+3. How has the gender gap changed over time?
 
-### Question 4. Are there any missing years, if so, why?
+4. Are there any missing years, if so, why?
 
-### Question 5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
+5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
 
-### Question 6. How has age of participants changed over time and across seasons?
+6. How has age of participants changed over time and across seasons?
 
-### Question 7. Is the a correlation of height and weight in events?
+7. Is the a correlation of height and weight in events?
 
-### Question 8. How do countries perform in Summer vs Winter?
+8. How do countries perform in Summer vs Winter?
 
-### Question 9. How do the Individual Olympic Athletes perform?
+9. How do the Individual Olympic Athletes perform?
 
-### Question 10. What Olympic events have stayed around, which have been removed?
+10. What Olympic events have stayed around, which have been removed?
 
-### Question 11. Who are the most decorated Olympians?
+11. Who are the most decorated Olympians?
 
-### Question 12. How does GDP effect a country's performance?
+```{r fig.width=9}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+codes <- read.csv('noc_regions.csv', stringsAsFactors = FALSE)
+
+codes <- codes %>% 
+  select(-notes) %>%
+  rename(`Country Name` = region) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Boliva', 'Bolivia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'UK', 'United Kingdom')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'USA', 'United States'))
+
+olympics <- olympics %>% 
+  left_join(codes, by='NOC') %>%
+  mutate(Medal = replace_na(Medal, 'No medal'))
+olympics$Name <- as.factor(olympics$Name)
+
+medals <- olympics %>%
+  group_by(Name) %>%
+  summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+
+medals <- aggregate(. ~  Name, data=medals, sum)
+
+medals <- medals %>% 
+  filter(Total>10) %>%
+  select(-Total) %>%
+  pivot_longer(c('Gold', 'Silver', 'Bronze'), names_to='Type', values_to='Amount')
+
+medals$Type <- factor(medals$Type, levels=c('Bronze', 'Silver', 'Gold'))
+
+ggplot(medals, aes(x=Name, weight=Amount, fill=Type)) + 
+  geom_bar() + 
+  coord_flip() +
+  xlab('Olympian') +
+  ylab('Number of Medals') +
+  ggtitle('Most Decorated Olympians') +
+  scale_fill_manual(breaks=c('Gold', 'Silver', 'Bronze'), 
+    values=c("Gold"="#FFD700", "Silver"="#aaa9ad", "Bronze"="#cd7f32")) +
+  scale_y_continuous(breaks=seq(0,30,2))
+```
+
+The bar plot above shows a breakdown of the medals one of the top 21 Olympians based on total medal count. We see that most of the top competitors earned between 11 and 13 total medals in their career. There are two Olympians who stand out from the rest in this plot, Larysa Semenivna Latynina and Michael Phelps. Latynina scored a small amount more that most of the competition with a total of 18 medals (9 gold, 5 silver, 4 bronze). Michael Phelps is a strong outlier, winning a total of 28 medals (23 gold, 3 silver, 2 bronze), the most in Olympic history. Phelps earned significantly more gold medals at 23 than all other Olympians earned total, showing his dominance in the games. We find that of the most decorated Olympians, there is a clear number one in Michael Phelps, who has made history with his repeated Olympic success.
+
+12. How does GDP effect a country's performance?
+
+```{r}
+gdp <- read.csv('world_bank_gdp.csv', stringsAsFactors = FALSE, check.names = FALSE, fileEncoding = 'UTF-8-BOM')
+
+gdp <- gdp %>% 
+  select(-`Indicator Name`, -`Indicator Code`, -`2020`) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Russian Federation', 'Russia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Yemen, Rep.', 'Yemen')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Congo, Rep.', 'Republic of Congo')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Congo, Dem. Rep.', 'Democratic Republic of the Congo')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Bahamas, The', 'Bahamas')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Egypt, Arab Rep.', 'Egypt')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Iran, Islamic Rep.', 'Iran')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Virgin Islands (U.S.)', 'Virgin Islands, US')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Kyrgyz Republic', 'Kyrgyzstan')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Korea, Rep.', 'South Korea')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Korea, Dem. People’s Rep.', 'North Korea')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Slovak Republic', 'Slovakia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Syrian Arab Republic', 'Syria')) %>%
+  pivot_longer(as.character(1960:2019), names_to='Year', values_to='GDP')
+gdp$Year <- as.numeric(gdp$Year)
+
+country_medals <- olympics %>%
+  filter(Year >= 1960) %>%
+  group_by(`Country Name`, Year) %>%
+  summarize(`Country Code` = NOC,
+            Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+country_medals <- aggregate(. ~  `Country Name`+Year+`Country Code`, data=country_medals, sum)
+
+joined <- country_medals %>%
+  left_join(gdp, by=c('Country Name', 'Year')) %>%
+  select(`Country Name`, Year, Total, GDP) %>%
+  drop_na() %>%
+  group_by(`Country Name`) %>%
+  summarize(avg_GDP = mean(GDP), avg_medals=mean(Total))
+  
+ggplot(joined, aes(x=avg_GDP, y=avg_medals)) + 
+  geom_point() + 
+  geom_smooth(method='lm', se=F) +
+  geom_label_repel(data=subset(joined, avg_medals>50 | avg_GDP>2*10^12), 
+                   aes(label=`Country Name`)) +
+  xlab('Average GDP During Year of Olympics (USD)') +
+  ylab('Average Medals Won') +
+  labs(title='Average GDP vs Average Medals Won')
+
+ggplot(filter(joined, `Country Name`!='United States'), aes(x=avg_GDP, y=avg_medals)) + 
+  geom_point() + 
+  geom_smooth(method='lm', se=F) +
+  geom_label_repel(data=filter(subset(joined, avg_medals>35 | avg_GDP>1*10^12), `Country Name`!='United States'), 
+                   aes(label=`Country Name`)) +
+  xlab('Average GDP During Year of Olympics (USD)') +
+  ylab('Average Medals Won') +
+  labs(title='Average GDP vs Average Medals Won',
+       subtitle='Without United States Data')
+```
+
+Looking at the first graph, it is seen that there is a weak positive linear correlation between the average number of medals a country wins in the Olympics and the country's GDP (is USD) that year. It is seen that the United States is a strong outlier. The US wins significantly more medals than any other country and has a significantly higher GDP than any other competing country. By removing this data point, we can more accurately take a look at the rest of the data and determine if GDP does in fact impact the number of medals won.
+
+The second graph is the same as the first, with the exception that the United States is removed. By examining this graph, we still see that there is only a weak positive correlation between GDP and the number of medals won. With the points more readable now, some comparisons can be made. Looking at Cuba and Japan, we see that they, on average, earn approximately the same amount of medals at each Olympic Games. Even though they have similar medal counts, there is a stark difference in the GDP of these two countries. Japan's average GDP is around 3.5 trillion dollars and Cuba's average GDP is 3.7 billion dollars, meaning Japan's GDP is approximately 1000 times larger than Cuba's. Next, we will look at Russia and China. Russia has the largest number of medals won per Olympic games excluding the US, with just over 125 on average. China averages just above 25 medals per Olympics. Russia wins about 100 medal more on average, despite having a third (~ 1 trillion USD) the GDP of China (~ 3 trillion USD). Some countries, like the UK and France, appear to closely follow the regression line like the US and and have positively correlated GDP and medal counts. Overall, there is a lot of variation between the GDP and number of medals won in the Olympics. As a result, GDP is not necessarily a good measure of Olympic success.
 
 ## Conclusion
