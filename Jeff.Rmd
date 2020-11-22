@@ -1,0 +1,169 @@
+---
+title: "Final"
+author: "Jeffrey Kinard"
+date: "11/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+**1. How are medals distributed among countries over the history of the games?**
+```{r}
+data <- readr::read_csv('athlete_events.csv')
+
+clean_data <- data %>% 
+  select(c('Team', 'Year', 'Season', 'Medal', 'City')) %>% 
+  drop_na() %>% 
+  mutate(Team = as.character(gsub("-1", "", Team))) %>%
+  mutate(Team = as.character(gsub("-2", "", Team))) %>%
+  mutate(Team = as.character(gsub("-3", "", Team))) %>%
+  mutate(Team = as.character(gsub("-4", "", Team))) %>%
+  mutate(Team = as.character(gsub("Chinese Taipei", "China", Team))) %>%
+  mutate(Team = as.character(gsub("Hong Kong", "China", Team))) %>%
+  mutate(Team = as.character(gsub("Czechoslovakia", "Czech Republic", Team))) %>%
+  mutate(Team = as.character(gsub("Bohemia", "Czech Republic", Team))) %>% 
+  mutate(Team = as.character(gsub("East Germany", "Germany", Team))) %>%
+  mutate(Team = as.character(gsub("West Germany", "Germany", Team))) %>%
+  mutate(Team = as.character(gsub("Soviet Union", "Russia", Team))) %>% 
+  mutate(Team = as.character(gsub("Great Britain", "UK", Team))) %>% 
+  mutate(Team = as.character(gsub("England", "UK", Team))) %>% 
+  mutate(City = as.character(gsub("Roma", "Rome", City))) %>% 
+  mutate(City = as.character(gsub("Athina", "Athens", City))) %>% 
+  mutate(City = as.character(gsub("Antwerpen", "Antwerp", City))) %>% 
+  mutate(City = as.character(gsub("Torino", "Turin", City))) %>% 
+  mutate(City = as.character(gsub("Moskva", "Moscow", City))) %>% 
+  mutate(City = as.character(gsub("Chamonix", "Paris", City))) %>% 
+  mutate(City = as.character(gsub("Sankt Moritz", "Bern", City))) %>% 
+  mutate(City = as.character(gsub("Squaw Valley", "San Francisco", City))) %>% 
+  mutate(City = as.character(gsub("Garmisch-Partenkirchen", "Munich", City))) %>% 
+  mutate(City = as.character(gsub("Cortina d'Ampezzo", "Rome", City))) %>% 
+  mutate(Team = as.character(gsub("United States", "USA", Team)))
+
+world <- map_data("world")
+
+medal_data <- clean_data %>% 
+  group_by(Team, Medal) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region')
+```
+
+The below map shows the distribution of all medals over all Olympic history by country.
+```{r}
+clean_data %>% 
+  group_by(Team) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region') %>%
+  right_join(world, by="region") %>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+The below map shows the distribution of Gold medals over all Olympic history by country.
+```{r}
+medal_data %>%
+  filter(Medal=="Gold") %>% 
+  right_join(world, by="region")%>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+The below map shows the distribution of Silver medals over all Olympic history by country.
+```{r}
+medal_data %>%
+  filter(Medal=="Silver") %>% 
+  right_join(world, by="region") %>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+The below map shows the distribution of bronze medals over all Olympic history by country.
+```{r}
+medal_data %>%
+  filter(Medal=="Bronze") %>% 
+  right_join(world, by="region") %>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+```{r}
+top_12 <- clean_data %>% 
+  group_by(Team) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region') %>% 
+  arrange(-count) %>% 
+  select(region) %>% 
+  head(12)
+
+medal_data <- clean_data %>% 
+  group_by(Team, Medal, Year) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region') %>% 
+  right_join(top_12, by="region")
+
+cbPalette <- c("#cd7f32", "#bec2cb", "#d4af37")
+medal_data$Medal <- medal_data$Medal %>% factor(levels = c("Bronze", "Silver", "Gold"))
+medal_data %>% 
+  ggplot(aes(x=Year, y=count, color=Medal)) + 
+  scale_color_manual(values=cbPalette) + 
+  geom_line() + 
+  facet_wrap(~region)
+```
+  
+**2. How does hosting the Olympics correlate with the host country winning medals?**
+
+roma
+```{r}
+cities <- readr::read_csv('worldcities.csv')
+city_country <- cities %>% select(city_ascii, country) %>% rename(City=city_ascii )%>% rename(Country=country)
+countries <- clean_data %>% left_join(city_country, by="City") %>% select(City, Country) %>% unique()
+countries <- countries[-c(2, 6:7, 18:19, 22, 25, 27, 29, 31, 33, 35, 37, 46, 48),]
+host_data <- clean_data %>% left_join(countries, by="City") %>% 
+  mutate(Country = as.character(gsub("United Kingdom", "UK", Country))) %>% 
+  mutate(Country = as.character(gsub("United States", "USA", Country))) %>% 
+  mutate(Country = as.character(gsub("Korea, South", "South Korea", Country))) %>% 
+  mutate(Country = as.character(gsub("Bosnia And Herzegovina", "Yugoslavia", Country)))
+
+host_avg <- host_data %>% filter(Team==Country) %>% select(Team, Medal, Year) %>% group_by(Team, Medal, Year) %>% summarise(count=n()) %>% ungroup() %>% group_by(Team, Medal) %>% summarise(count=mean(count)) 
+
+host_v_total <- host_avg %>% 
+  left_join(clean_data %>% 
+              select(Team, Year, Medal) %>% 
+              group_by(Team, Medal, Year) %>% 
+              summarise(count=n()) %>% 
+              ungroup() %>% 
+              group_by(Team, Medal) %>% 
+              summarise(total_avg=mean(count)), by=c('Team', 'Medal')) %>% 
+  rename(host_avg="count") %>% 
+  pivot_longer(c(host_avg, total_avg), names_to = "count_avg", values_to = "counts") 
+
+cbPalette <- c("#cd7f32", "#bec2cb", "#d4af37")
+host_v_total$Medal <- host_v_total$Medal %>% factor(levels = c("Bronze", "Silver", "Gold"))
+host_v_total %>% 
+  ggplot(aes(x=count_avg, y=counts, fill=Medal)) + geom_bar(stat='identity') + 
+  facet_wrap(~Team) + 
+  scale_fill_manual(values=cbPalette)
+```
