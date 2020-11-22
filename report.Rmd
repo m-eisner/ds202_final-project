@@ -1,0 +1,483 @@
+---
+title: "Final Project Report"
+author: "Matthew Eisner, Jeffrey Kinard, Cody Nielsen, Muhammed Idris, Patrick Origer, Zachary Johnson"
+date: "11/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+library(knitr)
+```
+
+```{r imports, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggrepel)
+library(gtable)
+library(grid)
+library(lattice)
+library(gridExtra)
+library(gifski)
+library(gganimate)
+```
+
+## Background
+
+## Data Aquisition and Cleaning
+The main dataset used for this project is [120 Years of Olympic History](https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results?select=athlete_events.csv), obtained from Kaggle. A supplemental dataset, [GDP data from The World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD), was added in order to bolster our analysis. In the Olympic dataset, there are two data files. One is the main file, containing information from the Olympic Games from Athens 1896 to Rio 2016. It contains Athlete ID, name, sex, age, height, weight, team, country code, Olympic game, season, year, city, sport, event, and medal won. The second file gives the full country name for each country code used in the main dataset. This dataset is in tidy format. Since the Olympic dataset was very rich, it was decided that each team member would individually clean and filter the data to fit their analyses. The GDP data is a csv file containing the GDP of countries (in USD) from 1960 to 2019. This dataset will allow us to also evaluate how a country's economy effects the Olympics. The GDP data is not in a tidy format, since years are used as columns. In addition, many of the country names and country codes used in the GDP file did not match the Olympics dataset. These issue had to be resolved in order to merge the datasets and perform analyses. 
+
+## Exploratory Analysis
+
+## Vizualizing the Data 
+
+## Questions Raised
+
+1. How are medals distributed among countries over the history of the games?
+
+2. How does hosting the Olympics correlate with the host country winning medals?
+
+3. How has the gender gap changed over time?
+```{r}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+```
+
+-Line chart displaying number of athletes through time by season
+```{r}
+NumAthletes <- olympics %>% group_by(Year, Season) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, color = Season)) +
+  geom_line() + geom_point() +
+  labs(title = "Number of Athletes by Season",
+       y = "Number of Athletes")
+
+NumAthletes
+```
+
+-Creating data frame in regards to a gender gap
+```{r}
+sexGap <- olympics %>%
+  group_by(Sex, Year) %>%
+  summarise(NumAthletes = n_distinct(Name)) %>%
+  pivot_wider(names_from = Sex, values_from = NumAthletes) %>%
+  rename(NumberFemaleAthletes = F, NumberMaleAthletes = M) 
+
+sexGap[is.na(sexGap)] = 0
+
+sexGap <- sexGap %>%
+  mutate(FemaleToMaleRatio = NumberFemaleAthletes / NumberMaleAthletes, 
+  FemaleAndMaleDifference = NumberMaleAthletes - NumberFemaleAthletes)
+```
+
+-Table displaying smallest gap ratios of sex by year
+```{r}
+sexGapSummary <- sexGap %>% select(Year, FemaleToMaleRatio) %>%
+  mutate(MaleToFemaleRatio = 1 / FemaleToMaleRatio) %>%
+  arrange(MaleToFemaleRatio)
+
+head(sexGapSummary, 10)
+```
+
+-Line plots displaying displaying ratio and difference of athletes by sex
+```{r}
+ggplot(sexGap, aes(x = Year, y = FemaleToMaleRatio)) + geom_line() + geom_point() +
+  labs(title = "Ratio Comparison From Female to Male Athletes", y = "Female to Male Ratio")
+
+ggplot(sexGap, aes(x = Year, y = FemaleAndMaleDifference)) + geom_line() + geom_point() +
+  labs(title = "Difference in Number of Athletes Between Sexes", y = "Sex Difference")
+```
+
+-Creating two data frames in regards to their season
+```{r}
+sexGapWinter <- olympics %>%
+  filter(Season == "Winter") %>%
+  group_by(Sex, Year) %>%
+  summarise(NumAthletes = n()) %>%
+  pivot_wider(names_from = Sex, values_from = NumAthletes) %>%
+  rename(NumberFemaleAthletes = F, NumberMaleAthletes = M) %>%
+  mutate(FemaleToMaleRatio = NumberFemaleAthletes / NumberMaleAthletes, 
+  FemaleAndMaleDifference = NumberMaleAthletes - NumberFemaleAthletes) %>%
+  arrange(desc(FemaleToMaleRatio))
+
+sexGapSummer <- olympics %>%
+  filter(Season == "Summer") %>%
+  group_by(Sex, Year) %>%
+  summarise(NumAthletes = n()) %>%
+  pivot_wider(names_from = Sex, values_from = NumAthletes) %>%
+  rename(NumberFemaleAthletes = F, NumberMaleAthletes = M) 
+
+sexGapSummer[is.na(sexGapSummer)] = 0
+
+sexGapSummer <- sexGapSummer %>%
+  mutate(FemaleToMaleRatio = NumberFemaleAthletes / NumberMaleAthletes, 
+  FemaleAndMaleDifference = NumberMaleAthletes - NumberFemaleAthletes) %>%
+  arrange(desc(FemaleToMaleRatio))
+
+```
+
+-Line plot displaying female to male athlete ratio
+```{r}
+ggplot(sexGapWinter, aes(x = Year, y = FemaleToMaleRatio)) +
+  geom_line(aes(color = "Winter")) + geom_point(aes(color = "Winter")) +
+  geom_line(data = sexGapSummer, aes(color = "Summer")) + geom_point(data = sexGapSummer, aes(color = "Summer")) +
+  scale_color_manual(name = "Season", values = c("red", "blue")) +
+  labs(title = "Ratio of Athletes by Sex Between Type of Season",
+       y = "Female to Male Athlete Ratio")
+```
+
+-Line plot displaying female and male difference in number of athletes
+```{r}
+ggplot(sexGapWinter, aes(x = Year, y = FemaleAndMaleDifference)) +
+  geom_line(aes(color = "Winter")) + geom_point(aes(color = "Winter")) +
+  geom_line(data = sexGapSummer, aes(color = "Summer")) + geom_point(data = sexGapSummer, aes(color = "Summer")) +
+  scale_color_manual(name = "Season", values = c("red", "blue")) +
+  labs(title = "Difference in Number of Athletes Between Sexes by Season",
+       y = "Male and Female Athlete Difference")
+```
+
+It should be noted, the number of athletes in the Olympics has consistently increased throughout time. Beginning at around 200 in 1896 and reaching its high of about 11,000 in 2016. Looking at the visual above, "Difference in Number of Athletes Between Sexes and Seasons", the number of summer male athletes increased substantially more till around 1992 than female athletes. Notably, the number of summer female athletes has greatly outpaced the number of more male athletes since 1992, which can be seen by the downward trend in the visual. Comparatively, winter athletes numbers has increased gradually throughout time, but the male and female difference in athletes stayed level. Moving over to the visual, "Ratio of Athletes by Sex Between Type of Season", it is nice to see the ratio of female to male athletes for both the summer and winter games has drastically increased throughout time. The both increased in similar trajectories, while having closely similar shapes to the other for games closely held together. It can be observed that there were about 5 female athletes for every 6 male athletes at the 2016 Summer Olympics. This is considerable improvement when compared to the 1948 Summer Olympics, where there were 10 male athletes to 1 female athlete. Overall, the gender gap between male and female Olympic athletes has shrunken considerably, but there is space for that gap to shrink even more, and it will likely do so in later years.
+
+
+4. Are there any missing years, if so, why?
+```{r}
+olympics %>% group_by(Year, Season) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack", width = 1.5) +
+  labs(title = "Number of Athletes by Season",
+       y = "Number of Athletes")
+
+olympics %>% group_by(Year, Season) %>% 
+  filter(Year >= 1904 & Year <= 1924) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Number of Athletes by Season (1904-1924)", y = "Number of Athletes") +
+  geom_text(aes(label = Year), position = position_stack(vjust = 0.5))
+
+olympics %>% group_by(Year, Season) %>% 
+  filter(Year >= 1932 & Year <= 1952) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Number of Athletes by Season (1932-1952)", y = "Number of Athletes") +
+  geom_text(aes(label = Year), position = position_stack(vjust = 0.5))
+
+olympics %>% group_by(Year, Season) %>% 
+  filter(Year >= 1984 & Year <= 2000) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Number of Athletes by Season (1984-2000)", y = "Number of Athletes") +
+  geom_text(aes(label = Year), position = position_stack(vjust = 0.5))
+```
+
+Yes, there are some years throughout time where the Olympic Games were not performed. The first time was the 1916 Olympic Games. You can see in the visual above, "Number of Athletes by Season (1904-1924)", that there were zero athletes in the years 1916 for the Olympics. This was due to the outbreak of World War I, which caused the Olympics to be canceled. Later on, there were no Olympics in 1940 or 1944. This was the result of World War II breaking out, which had the both the summer and winter games for each year to not be held. This large gap can be seen in the visual, "Number of Athletes by Season (1932-1952)".
+
+
+5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
+```{r}
+# Data
+athlete_events <- read.csv("~/ds202/final_project/athlete_events.csv")
+
+winter_years <- c(unique(athlete_events$Year[athlete_events$Season == "Winter"]))
+num_noc_per_year <- athlete_events %>%
+  group_by(Year) %>%
+  summarise(num_noc_per_year = length(unique(NOC))) %>%
+  mutate(winter_sports = ifelse(Year %in% winter_years, 1, 0)) %>%
+  mutate(summer_post_break = ifelse(Year >= 1996 & (2016 - Year) %% 4 == 0, 1, 0)) %>%
+  mutate(winter_post_break = ifelse(Year >= 1994 & (2018 - Year) %% 4 == 0, 1, 0)) %>%
+  mutate(pre_winter = ifelse(Year <= 1920, 1, 0)) %>%
+  mutate(combined_olympics = ifelse(pre_winter == 0 & Year <= 1992, 1, 0)) %>%
+  mutate(olympic_type=case_when(
+    (summer_post_break == 1) ~ "summer",
+    winter_post_break == 1 ~ "winter",
+    pre_winter == 1 ~ "pre-winter",
+    combined_olympics == 1~ "both"
+  ), olympic_type = as.factor(olympic_type))
+
+type <- ggplot(data = num_noc_per_year, aes(olympic_type, fill = olympic_type)) + 
+  geom_bar(stat = "count") +
+  ggtitle("Number of Each Type of Olympics")
+type
+
+density <- ggplot(data = num_noc_per_year, aes(num_noc_per_year, group = as.factor(olympic_type), color = as.factor(olympic_type), linetype = as.factor(olympic_type))) + stat_ecdf(geom = "step") + theme_classic() + xlab("Number of Participants") + ylab("Empirical cumulative probability") + ggtitle("Cumulative Density Plot")
+density
+
+# plot time series
+olym_timeseries <- ggplot(data = num_noc_per_year, aes(x = Year, y = num_noc_per_year, group = as.factor(olympic_type), color = as.factor(olympic_type))) + 
+  geom_line() + 
+  geom_vline(xintercept = 1993) +
+  geom_vline(xintercept = 1924) +
+  annotate("text", x = 1976, y = 200, label = "Split to Separate 
+Summer and Winter", size = 3) + 
+  ylab("Number of Countries Participating") +
+  annotate("text", x = 1937, y = 125, label = "Introduction of 
+Winter Games", size  =3) +
+  theme_minimal()
+
+olym_timeseries
+```
+
+We see a low amount of participation in the pre-winter games years of the olympics. A large jump occurs in the number of participation with the introduction of the winter games is likely due to an expansion of opportunities for colder climate countries and also a general expansion of the games as an international institution. A steady increase then occurs until the 70s where politics around the inclusion of New Zealand in the games caused 29 countries (mostly from Africa) to briefly boycott the games. There is another large jump in the number of participants in just the summer games when the games split into summer and winter games in the way we know the format today. We see, via the cumulative density plot, that the modern winter games have become as well attended as the combined games in the mid 20th century.
+
+6. How has age of participants changed over time and across seasons?
+```{r}
+#looking at the average age by year
+athlete_events_age <- athlete_events %>%
+  group_by(Year) %>%
+  summarise(age = mean(Age[!is.na(Age)]))
+
+#plot for this
+avg_age <- ggplot(data = athlete_events_age, aes(x = as.factor(Year), y = age)) + 
+  geom_histogram(stat = "identity", bins = 35) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  xlab("Year") + ylab("Average Age of Olympian")
+ggsave(filename = "avg_age.png", avg_age, path = "~/Downloads/")
+
+#looking at the average age by season
+athlete_events_season <- athlete_events %>%
+  group_by(Season) %>%
+  summarise(Age = mean(Age[!is.na(Age)]))
+
+#plot for this
+ggplot(data = athlete_events_season, aes(x = Season, y = Age, fill = Season)) + 
+  geom_histogram(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90)) +
+  xlab(" ") + ylab("Average Age of Olympian")
+
+
+#t test for the difference between summer and winter
+t.test(athlete_events$Age[athlete_events$Season == "Summer" & !is.na(athlete_events$Age)],
+       athlete_events$Age[athlete_events$Season == "Winter" & !is.na(athlete_events$Age)])
+
+#we see a statistically significant result but not a practically different gap in age.
+
+#setting up and plotting age as a function of year in ols with a cubic model
+lm.deg3 <- lm(data = athlete_events_age, formula = age ~ poly(Year, degree = 3))
+
+p.lm.deg3 <- ggplot(data = athlete_events_age, aes(x = Year, y = age)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula=y~I(x^3)+I(x^2))
+
+
+#setting up and plotting age as a function of year in ols with a fourth degree model
+lm.deg4 <- lm(data = athlete_events_age, formula = age ~ poly(Year, degree = 4))
+
+p.lm.deg4 <- ggplot(data = athlete_events_age, aes(x = Year, y = age)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula=y~I(x^4)+I(x^3)+I(x^2))
+
+#setting up and plotting age as a function of year in ols with a fifth degree model
+lm.deg5 <- lm(data = athlete_events_age, formula = age ~ poly(Year, degree = 5))
+
+p.lm.deg5 <- ggplot(data = athlete_events_age, aes(x = Year, y = age)) + 
+  geom_point() +
+  geom_smooth(method = "lm", formula=y~I(x^5)+I(x^4)+I(x^3)+I(x^2))
+
+p.lm.deg3;p.lm.deg4;p.lm.deg5
+```
+
+We have a statistically significant difference in the average age of participants of the summer and winter olympic games but the difference is not particularly substantial. If we focus on the relationship between age and time (in years) we see that a cubic polynomial model is not sufficient to accurately show the ebb and flow of the relationship. A 5th degree polynomial model captures the up and down nature of the relationship. There is a rise in the average age going into ~1930. Then the average declines into 1980 before rising again into the 21st century. Additionally we see a plateau going into the modern olympics here.
+
+7. Is the a correlation of height and weight in events?
+
+8. How do countries perform in Summer vs Winter?
+
+9. How do the Individual Olympic Athletes perform?
+
+```{r}
+athlete_data <- read.csv('athlete_events.csv')
+regions <- read.csv('noc_regions.csv')
+
+athlete_data$Sex <- athlete_data$Sex %>% as.factor()
+#athlete_data$Season <- as.factor()
+athlete_data$Height <- as.double(athlete_data$Height)
+athlete_data$Weight <- as.double(athlete_data$Weight)
+athlete_data$Medal <- athlete_data$Medal %>% factor(levels = c('Gold','Silver','Bronze'))
+
+athlete_cleaned <- athlete_data
+
+medal_levels <- levels(athlete_cleaned$Medal)
+
+medal_levels[length(medal_levels) + 1] <- "None"
+
+athlete_cleaned$Medal <- factor(athlete_cleaned$Medal, levels = medal_levels)
+
+athlete_cleaned$Medal[is.na(athlete_cleaned$Medal)] <- "None"
+
+athlete_region <- athlete_cleaned %>% left_join(regions,by="NOC") %>% filter(!is.na(region)) 
+
+ioa <- athlete_region %>% filter(Team == 'Individual Olympic Athletes') 
+
+```  
+
+A missing value in the Medals category could indicate that the athlete did not win a medal for that particular Event, Year, and Games.
+
+```{r}
+#Number of medals awarded to Individual Olympic Athletes from 1896 to 2016
+ind_medal <- athlete_region %>% filter(Team == 'Individual Olympic Athletes', Medal != 'None') %>% group_by(Name, Sport, Medal) %>% summarize(Count=length(Medal)) 
+
+# order Athlete by total medal count
+medal_count <- ind_medal %>% group_by(Name) %>% summarize(Total=sum(Count)) %>% arrange(Total) %>% select(Name)
+
+ind_medal$Name <- factor(ind_medal$Name, levels=medal_count$Name)
+
+ind_medal %>% ggplot(aes(x = Name, y = Count, fill = Medal)) + geom_col() + xlab('Athlete') + ylab('Count') + coord_flip() + ggtitle('Individual Olympic Athletes Medal Count') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+The graph shows 5 athletes from the Individual Olympic Athletes Team (Athletes that do not represent a country).
+These 5 athletes are the only ones that won medals.  
+
+10. What Olympic events have stayed around, which have been removed?
+
+```{r}
+# Count Events each year
+counts_event <- athlete_cleaned %>% filter(Team != "Unknown") %>% group_by(Year,Season) %>%
+  summarize(Events = length(unique(Event)))
+
+#Plot change of events over the years
+
+animated <- ggplot(counts_event, aes(x=Year, y=Events, group=Season, color=Season)) + geom_point(size=2) + geom_line()  + transition_reveal(Year) + labs(title = "Olympic Events from 1896 to 2016") + theme(plot.title = element_text(hjust = 0.5))
+
+animate(animated)
+```  
+
+Highest number of events in 1992 with 314 events. 
+
+```{r}
+#Filter events before the year 2000
+before2000 <- athlete_region %>% filter(Year >= 1896 & Year< 2000) %>% select(Event, Year)
+
+#Filter events after the year 2000
+after2000 <- athlete_region %>% filter(Year >= 2000) %>% select(Event, Year) 
+
+#Events that remain throughout
+comparison <- semi_join(after2000, before2000, by ='Event')
+
+#Discontinued events
+discont_events <- anti_join(before2000, after2000, by= "Event")
+
+head(discont_events)
+```
+
+There are quite a few events that were removed over the years but there are also events that have been removed and reintroduced. Some of the discontinued events include Art Competitions (1912-1948),Tug-Of-War Men's Tug-Of-War(1900-1920),Military Ski Patrol Men's Military Ski Patrol.
+
+
+11. Who are the most decorated Olympians?
+
+```{r fig.width=9}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+codes <- read.csv('noc_regions.csv', stringsAsFactors = FALSE)
+
+codes <- codes %>% 
+  select(-notes) %>%
+  rename(`Country Name` = region) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Boliva', 'Bolivia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'UK', 'United Kingdom')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'USA', 'United States'))
+
+olympics <- olympics %>% 
+  left_join(codes, by='NOC') %>%
+  mutate(Medal = replace_na(Medal, 'No medal'))
+olympics$Name <- as.factor(olympics$Name)
+
+medals <- olympics %>%
+  group_by(Name) %>%
+  summarize(Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+
+medals <- aggregate(. ~  Name, data=medals, sum)
+
+medals <- medals %>% 
+  filter(Total>10) %>%
+  select(-Total) %>%
+  pivot_longer(c('Gold', 'Silver', 'Bronze'), names_to='Type', values_to='Amount')
+
+medals$Type <- factor(medals$Type, levels=c('Bronze', 'Silver', 'Gold'))
+
+ggplot(medals, aes(x=Name, weight=Amount, fill=Type)) + 
+  geom_bar() + 
+  coord_flip() +
+  xlab('Olympian') +
+  ylab('Number of Medals') +
+  ggtitle('Most Decorated Olympians') +
+  scale_fill_manual(breaks=c('Gold', 'Silver', 'Bronze'), 
+    values=c("Gold"="#FFD700", "Silver"="#aaa9ad", "Bronze"="#cd7f32")) +
+  scale_y_continuous(breaks=seq(0,30,2))
+```
+
+The bar plot above shows a breakdown of the medals one of the top 21 Olympians based on total medal count. We see that most of the top competitors earned between 11 and 13 total medals in their career. There are two Olympians who stand out from the rest in this plot, Larysa Semenivna Latynina and Michael Phelps. Latynina scored a small amount more that most of the competition with a total of 18 medals (9 gold, 5 silver, 4 bronze). Michael Phelps is a strong outlier, winning a total of 28 medals (23 gold, 3 silver, 2 bronze), the most in Olympic history. Phelps earned significantly more gold medals at 23 than all other Olympians earned total, showing his dominance in the games. We find that of the most decorated Olympians, there is a clear number one in Michael Phelps, who has made history with his repeated Olympic success.
+
+12. How does GDP effect a country's performance?
+
+```{r}
+gdp <- read.csv('world_bank_gdp.csv', stringsAsFactors = FALSE, check.names = FALSE, fileEncoding = 'UTF-8-BOM')
+
+gdp <- gdp %>% 
+  select(-`Indicator Name`, -`Indicator Code`, -`2020`) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Russian Federation', 'Russia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Yemen, Rep.', 'Yemen')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Congo, Rep.', 'Republic of Congo')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Congo, Dem. Rep.', 'Democratic Republic of the Congo')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Bahamas, The', 'Bahamas')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Egypt, Arab Rep.', 'Egypt')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Iran, Islamic Rep.', 'Iran')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Virgin Islands (U.S.)', 'Virgin Islands, US')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Kyrgyz Republic', 'Kyrgyzstan')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Korea, Rep.', 'South Korea')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Korea, Dem. People’s Rep.', 'North Korea')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Slovak Republic', 'Slovakia')) %>%
+  mutate(`Country Name` = str_replace(`Country Name`, 'Syrian Arab Republic', 'Syria')) %>%
+  pivot_longer(as.character(1960:2019), names_to='Year', values_to='GDP')
+gdp$Year <- as.numeric(gdp$Year)
+
+country_medals <- olympics %>%
+  filter(Year >= 1960) %>%
+  group_by(`Country Name`, Year) %>%
+  summarize(`Country Code` = NOC,
+            Gold = str_count(Medal, 'Gold'),
+            Silver = str_count(Medal, 'Silver'),
+            Bronze = str_count(Medal, 'Bronze'),
+            Total = Gold + Silver + Bronze)
+country_medals <- aggregate(. ~  `Country Name`+Year+`Country Code`, data=country_medals, sum)
+
+joined <- country_medals %>%
+  left_join(gdp, by=c('Country Name', 'Year')) %>%
+  select(`Country Name`, Year, Total, GDP) %>%
+  drop_na() %>%
+  group_by(`Country Name`) %>%
+  summarize(avg_GDP = mean(GDP), avg_medals=mean(Total))
+  
+ggplot(joined, aes(x=avg_GDP, y=avg_medals)) + 
+  geom_point() + 
+  geom_smooth(method='lm', se=F) +
+  geom_label_repel(data=subset(joined, avg_medals>50 | avg_GDP>2*10^12), 
+                   aes(label=`Country Name`)) +
+  xlab('Average GDP During Year of Olympics (USD)') +
+  ylab('Average Medals Won') +
+  labs(title='Average GDP vs Average Medals Won')
+
+ggplot(filter(joined, `Country Name`!='United States'), aes(x=avg_GDP, y=avg_medals)) + 
+  geom_point() + 
+  geom_smooth(method='lm', se=F) +
+  geom_label_repel(data=filter(subset(joined, avg_medals>35 | avg_GDP>1*10^12), `Country Name`!='United States'), 
+                   aes(label=`Country Name`)) +
+  xlab('Average GDP During Year of Olympics (USD)') +
+  ylab('Average Medals Won') +
+  labs(title='Average GDP vs Average Medals Won',
+       subtitle='Without United States Data')
+```
+
+Looking at the first graph, it is seen that there is a weak positive linear correlation between the average number of medals a country wins in the Olympics and the country's GDP (is USD) that year. It is seen that the United States is a strong outlier. The US wins significantly more medals than any other country and has a significantly higher GDP than any other competing country. By removing this data point, we can more accurately take a look at the rest of the data and determine if GDP does in fact impact the number of medals won.
+
+The second graph is the same as the first, with the exception that the United States is removed. By examining this graph, we still see that there is only a weak positive correlation between GDP and the number of medals won. With the points more readable now, some comparisons can be made. Looking at Cuba and Japan, we see that they, on average, earn approximately the same amount of medals at each Olympic Games. Even though they have similar medal counts, there is a stark difference in the GDP of these two countries. Japan's average GDP is around 3.5 trillion dollars and Cuba's average GDP is 3.7 billion dollars, meaning Japan's GDP is approximately 1000 times larger than Cuba's. Next, we will look at Russia and China. Russia has the largest number of medals won per Olympic games excluding the US, with just over 125 on average. China averages just above 25 medals per Olympics. Russia wins about 100 medal more on average, despite having a third (~ 1 trillion USD) the GDP of China (~ 3 trillion USD). Some countries, like the UK and France, appear to closely follow the regression line like the US and and have positively correlated GDP and medal counts. Overall, there is a lot of variation between the GDP and number of medals won in the Olympics. As a result, GDP is not necessarily a good measure of Olympic success.
+
+## Conclusion

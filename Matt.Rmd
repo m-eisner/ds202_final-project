@@ -59,7 +59,7 @@ olympics$Name <- as.factor(olympics$Name)
 
 11. Who are the most decorated Olympians?
 
-```{r}
+```{r fig.width=9}
 medals <- olympics %>%
   group_by(Name) %>%
   summarize(Gold = str_count(Medal, 'Gold'),
@@ -69,18 +69,22 @@ medals <- olympics %>%
 
 medals <- aggregate(. ~  Name, data=medals, sum)
 
-medals %>% 
+medals <- medals %>% 
   filter(Total>10) %>%
   select(-Total) %>%
-  pivot_longer(c('Gold', 'Silver', 'Bronze'), names_to='Type', values_to='Amount') %>%
-  ggplot(aes(x=Name, weight=Amount, fill=Type)) + 
+  pivot_longer(c('Gold', 'Silver', 'Bronze'), names_to='Type', values_to='Amount')
+
+medals$Type <- factor(medals$Type, levels=c('Bronze', 'Silver', 'Gold'))
+
+ggplot(medals, aes(x=Name, weight=Amount, fill=Type)) + 
   geom_bar() + 
   coord_flip() +
   xlab('Olympian') +
   ylab('Number of Medals') +
   ggtitle('Most Decorated Olympians') +
   scale_fill_manual(breaks=c('Gold', 'Silver', 'Bronze'), 
-    values=c("Gold"="#FFD700", "Silver"="#aaa9ad", "Bronze"="#cd7f32"))
+    values=c("Gold"="#FFD700", "Silver"="#aaa9ad", "Bronze"="#cd7f32")) +
+  scale_y_continuous(breaks=seq(0,30,2))
 ```
 
 12. How does GDP effect a country's performance?
@@ -110,7 +114,7 @@ ggplot(joined, aes(x=avg_GDP, y=avg_medals)) +
                    aes(label=`Country Name`)) +
   xlab('Average GDP During Year of Olympics (USD)') +
   ylab('Average Medals Won') +
-  labs(title='Average GDP vs Average Meadals Won')
+  labs(title='Average GDP vs Average Medals Won')
 
 ggplot(filter(joined, `Country Name`!='United States'), aes(x=avg_GDP, y=avg_medals)) + 
   geom_point() + 
@@ -119,7 +123,7 @@ ggplot(filter(joined, `Country Name`!='United States'), aes(x=avg_GDP, y=avg_med
                    aes(label=`Country Name`)) +
   xlab('Average GDP During Year of Olympics (USD)') +
   ylab('Average Medals Won') +
-  labs(title='Average GDP vs Average Meadals Won',
+  labs(title='Average GDP vs Average Medals Won',
        subtitle='Without United States Data')
 ```
 
