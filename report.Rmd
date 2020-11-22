@@ -43,8 +43,142 @@ The main dataset used for this project is [120 Years of Olympic History](https:/
 2. How does hosting the Olympics correlate with the host country winning medals?
 
 3. How has the gender gap changed over time?
+```{r}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+```
+
+-Line chart displaying number of athletes through time by season
+```{r}
+NumAthletes <- olympics %>% group_by(Year, Season) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, color = Season)) +
+  geom_line() + geom_point() +
+  labs(title = "Number of Athletes by Season",
+       y = "Number of Athletes")
+
+NumAthletes
+```
+
+-Creating data frame in regards to a gender gap
+```{r}
+sexGap <- olympics %>%
+  group_by(Sex, Year) %>%
+  summarise(NumAthletes = n_distinct(Name)) %>%
+  pivot_wider(names_from = Sex, values_from = NumAthletes) %>%
+  rename(NumberFemaleAthletes = F, NumberMaleAthletes = M) 
+
+sexGap[is.na(sexGap)] = 0
+
+sexGap <- sexGap %>%
+  mutate(FemaleToMaleRatio = NumberFemaleAthletes / NumberMaleAthletes, 
+  FemaleAndMaleDifference = NumberMaleAthletes - NumberFemaleAthletes)
+```
+
+-Table displaying smallest gap ratios of sex by year
+```{r}
+sexGapSummary <- sexGap %>% select(Year, FemaleToMaleRatio) %>%
+  mutate(MaleToFemaleRatio = 1 / FemaleToMaleRatio) %>%
+  arrange(MaleToFemaleRatio)
+
+head(sexGapSummary, 10)
+```
+
+-Line plots displaying displaying ratio and difference of athletes by sex
+```{r}
+ggplot(sexGap, aes(x = Year, y = FemaleToMaleRatio)) + geom_line() + geom_point() +
+  labs(title = "Ratio Comparison From Female to Male Athletes", y = "Female to Male Ratio")
+
+ggplot(sexGap, aes(x = Year, y = FemaleAndMaleDifference)) + geom_line() + geom_point() +
+  labs(title = "Difference in Number of Athletes Between Sexes", y = "Sex Difference")
+```
+
+-Creating two data frames in regards to their season
+```{r}
+sexGapWinter <- olympics %>%
+  filter(Season == "Winter") %>%
+  group_by(Sex, Year) %>%
+  summarise(NumAthletes = n()) %>%
+  pivot_wider(names_from = Sex, values_from = NumAthletes) %>%
+  rename(NumberFemaleAthletes = F, NumberMaleAthletes = M) %>%
+  mutate(FemaleToMaleRatio = NumberFemaleAthletes / NumberMaleAthletes, 
+  FemaleAndMaleDifference = NumberMaleAthletes - NumberFemaleAthletes) %>%
+  arrange(desc(FemaleToMaleRatio))
+
+sexGapSummer <- olympics %>%
+  filter(Season == "Summer") %>%
+  group_by(Sex, Year) %>%
+  summarise(NumAthletes = n()) %>%
+  pivot_wider(names_from = Sex, values_from = NumAthletes) %>%
+  rename(NumberFemaleAthletes = F, NumberMaleAthletes = M) 
+
+sexGapSummer[is.na(sexGapSummer)] = 0
+
+sexGapSummer <- sexGapSummer %>%
+  mutate(FemaleToMaleRatio = NumberFemaleAthletes / NumberMaleAthletes, 
+  FemaleAndMaleDifference = NumberMaleAthletes - NumberFemaleAthletes) %>%
+  arrange(desc(FemaleToMaleRatio))
+
+```
+
+-Line plot displaying female to male athlete ratio
+```{r}
+ggplot(sexGapWinter, aes(x = Year, y = FemaleToMaleRatio)) +
+  geom_line(aes(color = "Winter")) + geom_point(aes(color = "Winter")) +
+  geom_line(data = sexGapSummer, aes(color = "Summer")) + geom_point(data = sexGapSummer, aes(color = "Summer")) +
+  scale_color_manual(name = "Season", values = c("red", "blue")) +
+  labs(title = "Ratio of Athletes by Sex Between Type of Season",
+       y = "Female to Male Athlete Ratio")
+```
+
+-Line plot displaying female and male difference in number of athletes
+```{r}
+ggplot(sexGapWinter, aes(x = Year, y = FemaleAndMaleDifference)) +
+  geom_line(aes(color = "Winter")) + geom_point(aes(color = "Winter")) +
+  geom_line(data = sexGapSummer, aes(color = "Summer")) + geom_point(data = sexGapSummer, aes(color = "Summer")) +
+  scale_color_manual(name = "Season", values = c("red", "blue")) +
+  labs(title = "Difference in Number of Athletes Between Sexes by Season",
+       y = "Male and Female Athlete Difference")
+```
+
+It should be noted, the number of athletes in the Olympics has consistently increased throughout time. Beginning at around 200 in 1896 and reaching its high of about 11,000 in 2016. Looking at the visual above, "Difference in Number of Athletes Between Sexes and Seasons", the number of summer male athletes increased substantially more till around 1992 than female athletes. Notably, the number of summer female athletes has greatly outpaced the number of more male athletes since 1992, which can be seen by the downward trend in the visual. Comparatively, winter athletes numbers has increased gradually throughout time, but the male and female difference in athletes stayed level. Moving over to the visual, "Ratio of Athletes by Sex Between Type of Season", it is nice to see the ratio of female to male athletes for both the summer and winter games has drastically increased throughout time. The both increased in similar trajectories, while having closely similar shapes to the other for games closely held together. It can be observed that there were about 5 female athletes for every 6 male athletes at the 2016 Summer Olympics. This is considerable improvement when compared to the 1948 Summer Olympics, where there were 10 male athletes to 1 female athlete. Overall, the gender gap between male and female Olympic athletes has shrunken considerably, but there is space for that gap to shrink even more, and it will likely do so in later years.
+
 
 4. Are there any missing years, if so, why?
+```{r}
+olympics %>% group_by(Year, Season) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack", width = 1.5) +
+  labs(title = "Number of Athletes by Season",
+       y = "Number of Athletes")
+
+olympics %>% group_by(Year, Season) %>% 
+  filter(Year >= 1904 & Year <= 1924) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Number of Athletes by Season (1904-1924)", y = "Number of Athletes") +
+  geom_text(aes(label = Year), position = position_stack(vjust = 0.5))
+
+olympics %>% group_by(Year, Season) %>% 
+  filter(Year >= 1932 & Year <= 1952) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Number of Athletes by Season (1932-1952)", y = "Number of Athletes") +
+  geom_text(aes(label = Year), position = position_stack(vjust = 0.5))
+
+olympics %>% group_by(Year, Season) %>% 
+  filter(Year >= 1984 & Year <= 2000) %>%
+  summarise(NumberOfAthletes = n_distinct(Name)) %>%
+  ggplot(aes(x = Year, y = NumberOfAthletes, fill = Season)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Number of Athletes by Season (1984-2000)", y = "Number of Athletes") +
+  geom_text(aes(label = Year), position = position_stack(vjust = 0.5))
+```
+
+Yes, there are some years throughout time where the Olympic Games were not performed. The first time was the 1916 Olympic Games. You can see in the visual above, "Number of Athletes by Season (1904-1924)", that there were zero athletes in the years 1916 for the Olympics. This was due to the outbreak of World War I, which caused the Olympics to be canceled. Later on, there were no Olympics in 1940 or 1944. This was the result of World War II breaking out, which had the both the summer and winter games for each year to not be held. This large gap can be seen in the visual, "Number of Athletes by Season (1932-1952)".
+
 
 5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
 ```{r}
