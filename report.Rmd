@@ -363,7 +363,7 @@ comparison <- semi_join(after2000, before2000, by ='Event')
 #Discontinued events
 discont_events <- anti_join(before2000, after2000, by= "Event")
 
-discont_events
+head(discont_events)
 ```
 
 There are quite a few events that were removed over the years but there are also events that have been removed and reintroduced. Some of the discontinued events include Art Competitions (1912-1948),Tug-Of-War Men's Tug-Of-War(1900-1920),Military Ski Patrol Men's Military Ski Patrol.
