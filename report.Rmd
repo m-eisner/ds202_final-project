@@ -19,6 +19,7 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggrepel)
+library(gifski)
 ```
 
 ## Background
@@ -50,7 +51,83 @@ The main dataset used for this project is [120 Years of Olympic History](https:/
 
 9. How do the Individual Olympic Athletes perform?
 
+```{r}
+athlete_data <- read.csv('athlete_events.csv')
+regions <- read.csv('noc_regions.csv')
+
+athlete_data$Sex <- athlete_data$Sex %>% as.factor()
+#athlete_data$Season <- as.factor()
+athlete_data$Height <- as.double(athlete_data$Height)
+athlete_data$Weight <- as.double(athlete_data$Weight)
+athlete_data$Medal <- athlete_data$Medal %>% factor(levels = c('Gold','Silver','Bronze'))
+
+athlete_cleaned <- athlete_data
+
+medal_levels <- levels(athlete_cleaned$Medal)
+
+medal_levels[length(medal_levels) + 1] <- "None"
+
+athlete_cleaned$Medal <- factor(athlete_cleaned$Medal, levels = medal_levels)
+
+athlete_cleaned$Medal[is.na(athlete_cleaned$Medal)] <- "None"
+
+athlete_region <- athlete_cleaned %>% left_join(regions,by="NOC") %>% filter(!is.na(region)) 
+
+ioa <- athlete_region %>% filter(Team == 'Individual Olympic Athletes') 
+
+```  
+
+A missing value in the Medals category could indicate that the athlete did not win a medal for that particular Event, Year, and Games.
+
+```{r}
+#Number of medals awarded to Individual Olympic Athletes from 1896 to 2016
+ind_medal <- athlete_region %>% filter(Team == 'Individual Olympic Athletes', Medal != 'None') %>% group_by(Name, Sport, Medal) %>% summarize(Count=length(Medal)) 
+
+# order Athlete by total medal count
+medal_count <- ind_medal %>% group_by(Name) %>% summarize(Total=sum(Count)) %>% arrange(Total) %>% select(Name)
+
+ind_medal$Name <- factor(ind_medal$Name, levels=medal_count$Name)
+
+ind_medal %>% ggplot(aes(x = Name, y = Count, fill = Medal)) + geom_col() + xlab('Athlete') + ylab('Count') + coord_flip() + ggtitle('Individual Olympic Athletes Medal Count') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+The graph shows 5 athletes from the Individual Olympic Athletes Team (Athletes that do not represent a country).
+These 5 athletes are the only ones that won medals.  
+
 10. What Olympic events have stayed around, which have been removed?
+
+```{r}
+# Count Events each year
+counts_event <- athlete_cleaned %>% filter(Team != "Unknown") %>% group_by(Year,Season) %>%
+  summarize(Events = length(unique(Event)))
+
+#Plot change of events over the years
+
+animated <- ggplot(counts_event, aes(x=Year, y=Events, group=Season, color=Season)) + geom_point(size=2) + geom_line()  + transition_reveal(Year) + labs(title = "Olympic Events from 1896 to 2016") + theme(plot.title = element_text(hjust = 0.5))
+
+animate(animated)
+```  
+
+Highest number of events in 1992 with 314 events. 
+
+```{r}
+#Filter events before the year 2000
+before2000 <- athlete_region %>% filter(Year >= 1896 & Year< 2000) %>% select(Event, Year)
+
+#Filter events after the year 2000
+after2000 <- athlete_region %>% filter(Year >= 2000) %>% select(Event, Year) 
+
+#Events that remain throughout
+comparison <- semi_join(after2000, before2000, by ='Event')
+
+#Discontinued events
+discont_events <- anti_join(before2000, after2000, by= "Event")
+
+discont_events
+```
+
+There are quite a few events that were removed over the years but there are also events that have been removed and reintroduced. Some of the discontinued events include Art Competitions (1912-1948),Tug-Of-War Men's Tug-Of-War(1900-1920),Military Ski Patrol Men's Military Ski Patrol.
+
 
 11. Who are the most decorated Olympians?
 
