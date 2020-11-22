@@ -28,15 +28,14 @@ library(gganimate)
 ```
 
 ## Background
+The Olympic games are a worldwide phenomenon that that currently happen every two years and alternate between Winter and Summer events. Over 200 countries currently send athletes to compete in a myriad of sporting events. The creation of the Olympics were inspired by the ancient games held in Olympia, Greece from 8th century BC to 4th century AD. The first modern Olympic games were held in 1896 in Athens, Greece. In 2021 we will see the next games being hosted in Tokyo, Japan.
 
 ## Data Aquisition and Cleaning
 The main dataset used for this project is [120 Years of Olympic History](https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results?select=athlete_events.csv), obtained from Kaggle. A supplemental dataset, [GDP data from The World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD), was added in order to bolster our analysis. In the Olympic dataset, there are two data files. One is the main file, containing information from the Olympic Games from Athens 1896 to Rio 2016. It contains Athlete ID, name, sex, age, height, weight, team, country code, Olympic game, season, year, city, sport, event, and medal won. The second file gives the full country name for each country code used in the main dataset. This dataset is in tidy format. Since the Olympic dataset was very rich, it was decided that each team member would individually clean and filter the data to fit their analyses. The GDP data is a csv file containing the GDP of countries (in USD) from 1960 to 2019. This dataset will allow us to also evaluate how a country's economy effects the Olympics. The GDP data is not in a tidy format, since years are used as columns. In addition, many of the country names and country codes used in the GDP file did not match the Olympics dataset. These issue had to be resolved in order to merge the datasets and perform analyses. 
 
 ## Exploratory Analysis
 
-## Vizualizing the Data 
-
-## Questions Raised
+## Vizualizing the Data and Questions Raised
 
 1. How are medals distributed among countries over the history of the games?
 
@@ -183,7 +182,7 @@ Yes, there are some years throughout time where the Olympic Games were not perfo
 5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
 ```{r}
 # Data
-athlete_events <- read.csv("~/ds202/final_project/athlete_events.csv")
+athlete_events <- read.csv("athlete_events.csv")
 
 winter_years <- c(unique(athlete_events$Year[athlete_events$Season == "Winter"]))
 num_noc_per_year <- athlete_events %>%
@@ -287,6 +286,8 @@ We have a statistically significant difference in the average age of participant
 
 7. Is the a correlation of height and weight in events?
 ```{r}
+olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
+
 height<-olympics%>%group_by(Height)%>%summarize(Gold = str_count(Medal, 'Gold'),
             Silver = str_count(Medal, 'Silver'),
             Bronze = str_count(Medal, 'Bronze'),
