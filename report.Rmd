@@ -38,18 +38,187 @@ The main dataset used for this project is [120 Years of Olympic History](https:/
 
 ## Questions Raised
 
-1. How are medals distributed among countries over the history of the games?
+**1. How are medals distributed among countries over the history of the games?**
 
-2. How does hosting the Olympics correlate with the host country winning medals?
+In order to effectively determine the medal distribution trends for different countries, the data must first be cleaned. There are several countries that have multiple versions (appended number or old name), so these need to be conmbined into single instances. We are alos only interested in the Country, Year, Season, Medal and City columns as these are the only metrics that relate to the country and the medal count. Finally, we use the World map data which contains country names along with their coordinates for mapping. Since the Olympics dataset has lots of team names that are not country names (boat names, independent athletes, clubs, etc.), so when it is joined with the world data, it filters out any team that does not represent a country.
+```{r}
+data <- readr::read_csv('athlete_events.csv')
 
-3. How has the gender gap changed over time?
+clean_data <- data %>% 
+  select(c('Team', 'Year', 'Season', 'Medal', 'City')) %>% 
+  drop_na() %>% 
+  mutate(Team = as.character(gsub("-1", "", Team))) %>%
+  mutate(Team = as.character(gsub("-2", "", Team))) %>%
+  mutate(Team = as.character(gsub("-3", "", Team))) %>%
+  mutate(Team = as.character(gsub("-4", "", Team))) %>%
+  mutate(Team = as.character(gsub("Chinese Taipei", "China", Team))) %>%
+  mutate(Team = as.character(gsub("Hong Kong", "China", Team))) %>%
+  mutate(Team = as.character(gsub("Czechoslovakia", "Czech Republic", Team))) %>%
+  mutate(Team = as.character(gsub("Bohemia", "Czech Republic", Team))) %>% 
+  mutate(Team = as.character(gsub("East Germany", "Germany", Team))) %>%
+  mutate(Team = as.character(gsub("West Germany", "Germany", Team))) %>%
+  mutate(Team = as.character(gsub("Soviet Union", "Russia", Team))) %>% 
+  mutate(Team = as.character(gsub("Great Britain", "UK", Team))) %>% 
+  mutate(Team = as.character(gsub("England", "UK", Team))) %>% 
+  mutate(City = as.character(gsub("Roma", "Rome", City))) %>% 
+  mutate(City = as.character(gsub("Athina", "Athens", City))) %>% 
+  mutate(City = as.character(gsub("Antwerpen", "Antwerp", City))) %>% 
+  mutate(City = as.character(gsub("Torino", "Turin", City))) %>% 
+  mutate(City = as.character(gsub("Moskva", "Moscow", City))) %>% 
+  mutate(City = as.character(gsub("Chamonix", "Paris", City))) %>% 
+  mutate(City = as.character(gsub("Sankt Moritz", "Bern", City))) %>% 
+  mutate(City = as.character(gsub("Squaw Valley", "San Francisco", City))) %>% 
+  mutate(City = as.character(gsub("Garmisch-Partenkirchen", "Munich", City))) %>% 
+  mutate(City = as.character(gsub("Cortina d'Ampezzo", "Rome", City))) %>% 
+  mutate(Team = as.character(gsub("United States", "USA", Team)))
 
-4. Are there any missing years, if so, why?
+world <- map_data("world")
 
-5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
+medal_data <- clean_data %>% 
+  group_by(Team, Medal) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region')
+
+head(medal_data)
+```
+
+Now that the data is cleaned, we will map each country color-coded by total medal count over all Olympic history. We will look at the total medal count, gold medal count, silver medal count and bronze medal count for each coountry over all history.  
+  
+The below map shows the distribution of all medals over all Olympic history by country.  
+```{r}
+clean_data %>% 
+  group_by(Team) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region') %>%
+  right_join(world, by="region") %>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+The below map shows the distribution of Gold medals over all Olympic history by country.  
+```{r}
+medal_data %>%
+  filter(Medal=="Gold") %>% 
+  right_join(world, by="region")%>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+The below map shows the distribution of Silver medals over all Olympic history by country.  
+```{r}
+medal_data %>%
+  filter(Medal=="Silver") %>% 
+  right_join(world, by="region") %>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+The below map shows the distribution of bronze medals over all Olympic history by country.  
+```{r}
+medal_data %>%
+  filter(Medal=="Bronze") %>% 
+  right_join(world, by="region") %>% 
+  ggplot(aes(x = long, y = lat, fill=count)) +
+  geom_polygon(aes(group=group))
+```
+
+Next we will look at how medals are distributed over the years. We first extract the top 12 countries according to total medals over all Olympic history. Plotting these countries, with lines corresponding to medal type, shows some interesting trends. Let's look at 3 examples.  
+  
+```{r}
+top_12 <- clean_data %>% 
+  group_by(Team) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region') %>% 
+  arrange(-count) %>% 
+  select(region) %>% 
+  head(12)
+
+medal_data <- clean_data %>% 
+  group_by(Team, Medal, Year) %>% 
+  summarise(count=n()) %>% 
+  arrange(Team) %>%
+  rename(region=Team) %>% 
+  inner_join(world %>% 
+               select(region) %>% 
+               unique(), by='region') %>% 
+  right_join(top_12, by="region")
+
+cbPalette <- c("#cd7f32", "#bec2cb", "#d4af37")
+medal_data$Medal <- medal_data$Medal %>% factor(levels = c("Bronze", "Silver", "Gold"))
+medal_data %>% 
+  ggplot(aes(x=Year, y=count, color=Medal)) + 
+  scale_color_manual(values=cbPalette) + 
+  geom_line() + 
+  facet_wrap(~region)
+```
+  
+**Germany**  
+Germany has had a very inconsistent history at the games. They start off very low in the early games in terms of their medal count. By the 20’s and 30’s, they begin to spike in medals, but then fall again in the 40’s. Looking at Germany’s history, it becomes clear why this is. Due to World War 2, Germany was left in a poor state in terms of social and economic challenges. It would take them a few years to rebuild and reinstate themselves at contenders in the Olympics. By the 1980’s, Germany was again a powerhouse for about a decade. Nowadays, they have a very inconsistent performance at the games.  
+  
+**China**  
+China had a late start to the games due to several boycotts and lack of participation. They don’t really start earning medals until the 80’s. Ever since, they have a very inconsistent performance at the games. This is most likely due to the fact that China typically performs better at the summer games than the winter games. So every other games will see a spike in their medal count performance.  
+  
+**USA**  
+The USA had a somewhat consistent performance at the games up until the 80’s where, ever since, they have seen huge spikes and falls. Similar to China, this is probably due to the fact that the USA performs much better at the summer games than the winter games.
+  
+  
+**2. How does hosting the Olympics correlate with the host country winning medals?**
+
+The graphic below shows all of the countries that have hosted an Olympics and won at least 1 medal the year they hosted. Each plot corresponds to a country. The left bar in each plot is the average number of medals across all years that country hosted the games. The right bar in each plot is the average number of medals that country received across all Olympic games history.  
+```{r}
+cities <- readr::read_csv('worldcities.csv')
+city_country <- cities %>% select(city_ascii, country) %>% rename(City=city_ascii )%>% rename(Country=country)
+countries <- clean_data %>% left_join(city_country, by="City") %>% select(City, Country) %>% unique()
+countries <- countries[-c(2, 6:7, 18:19, 22, 25, 27, 29, 31, 33, 35, 37, 46, 48),]
+host_data <- clean_data %>% left_join(countries, by="City") %>% 
+  mutate(Country = as.character(gsub("United Kingdom", "UK", Country))) %>% 
+  mutate(Country = as.character(gsub("United States", "USA", Country))) %>% 
+  mutate(Country = as.character(gsub("Korea, South", "South Korea", Country))) %>% 
+  mutate(Country = as.character(gsub("Bosnia And Herzegovina", "Yugoslavia", Country)))
+
+host_avg <- host_data %>% filter(Team==Country) %>% select(Team, Medal, Year) %>% group_by(Team, Medal, Year) %>% summarise(count=n()) %>% ungroup() %>% group_by(Team, Medal) %>% summarise(count=mean(count)) 
+
+host_v_total <- host_avg %>% 
+  left_join(clean_data %>% 
+              select(Team, Year, Medal) %>% 
+              group_by(Team, Medal, Year) %>% 
+              summarise(count=n()) %>% 
+              ungroup() %>% 
+              group_by(Team, Medal) %>% 
+              summarise(total_avg=mean(count)), by=c('Team', 'Medal')) %>% 
+  rename(host_avg="count") %>% 
+  pivot_longer(c(host_avg, total_avg), names_to = "count_avg", values_to = "counts") 
+
+cbPalette <- c("#cd7f32", "#bec2cb", "#d4af37")
+host_v_total$Medal <- host_v_total$Medal %>% factor(levels = c("Bronze", "Silver", "Gold"))
+host_v_total %>% 
+  ggplot(aes(x=count_avg, y=counts, fill=Medal)) + geom_bar(stat='identity') + 
+  facet_wrap(~Team) + 
+  scale_fill_manual(values=cbPalette)
+```
+It can be shown that nearly every country performs better when they are the host country. One clear exception is the USA. This is probably due to the fact that the USA has hosted 2 olympics games – 1 summer and 1 winter. Since the US performs much better in summer than winter, this hurt their average number of medals for years they hosted.
+
+
+**3. How has the gender gap changed over time?**
+
+**4. Are there any missing years, if so, why?**
+
+**5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?**
 ```{r}
 # Data
-athlete_events <- read.csv("~/ds202/final_project/athlete_events.csv")
+athlete_events <- read.csv("athlete_events.csv")
 
 winter_years <- c(unique(athlete_events$Year[athlete_events$Season == "Winter"]))
 num_noc_per_year <- athlete_events %>%
@@ -92,7 +261,7 @@ olym_timeseries
 
 We see a low amount of participation in the pre-winter games years of the olympics. A large jump occurs in the number of participation with the introduction of the winter games is likely due to an expansion of opportunities for colder climate countries and also a general expansion of the games as an international institution. A steady increase then occurs until the 70s where politics around the inclusion of New Zealand in the games caused 29 countries (mostly from Africa) to briefly boycott the games. There is another large jump in the number of participants in just the summer games when the games split into summer and winter games in the way we know the format today. We see, via the cumulative density plot, that the modern winter games have become as well attended as the combined games in the mid 20th century.
 
-6. How has age of participants changed over time and across seasons?
+**6. How has age of participants changed over time and across seasons?**
 ```{r}
 #looking at the average age by year
 athlete_events_age <- athlete_events %>%
@@ -151,11 +320,11 @@ p.lm.deg3;p.lm.deg4;p.lm.deg5
 
 We have a statistically significant difference in the average age of participants of the summer and winter olympic games but the difference is not particularly substantial. If we focus on the relationship between age and time (in years) we see that a cubic polynomial model is not sufficient to accurately show the ebb and flow of the relationship. A 5th degree polynomial model captures the up and down nature of the relationship. There is a rise in the average age going into ~1930. Then the average declines into 1980 before rising again into the 21st century. Additionally we see a plateau going into the modern olympics here.
 
-7. Is the a correlation of height and weight in events?
+**7. Is the a correlation of height and weight in events?**
 
-8. How do countries perform in Summer vs Winter?
+**8. How do countries perform in Summer vs Winter?**
 
-9. How do the Individual Olympic Athletes perform?
+**9. How do the Individual Olympic Athletes perform?**
 
 ```{r}
 athlete_data <- read.csv('athlete_events.csv')
@@ -200,7 +369,7 @@ ind_medal %>% ggplot(aes(x = Name, y = Count, fill = Medal)) + geom_col() + xlab
 The graph shows 5 athletes from the Individual Olympic Athletes Team (Athletes that do not represent a country).
 These 5 athletes are the only ones that won medals.  
 
-10. What Olympic events have stayed around, which have been removed?
+**10. What Olympic events have stayed around, which have been removed?**
 
 ```{r}
 # Count Events each year
@@ -229,13 +398,13 @@ comparison <- semi_join(after2000, before2000, by ='Event')
 #Discontinued events
 discont_events <- anti_join(before2000, after2000, by= "Event")
 
-discont_events
+head(discont_events)
 ```
 
 There are quite a few events that were removed over the years but there are also events that have been removed and reintroduced. Some of the discontinued events include Art Competitions (1912-1948),Tug-Of-War Men's Tug-Of-War(1900-1920),Military Ski Patrol Men's Military Ski Patrol.
 
 
-11. Who are the most decorated Olympians?
+**11. Who are the most decorated Olympians?**
 
 ```{r fig.width=9}
 olympics <- read.csv('athlete_events.csv', stringsAsFactors = FALSE)
@@ -282,7 +451,7 @@ ggplot(medals, aes(x=Name, weight=Amount, fill=Type)) +
 
 The bar plot above shows a breakdown of the medals one of the top 21 Olympians based on total medal count. We see that most of the top competitors earned between 11 and 13 total medals in their career. There are two Olympians who stand out from the rest in this plot, Larysa Semenivna Latynina and Michael Phelps. Latynina scored a small amount more that most of the competition with a total of 18 medals (9 gold, 5 silver, 4 bronze). Michael Phelps is a strong outlier, winning a total of 28 medals (23 gold, 3 silver, 2 bronze), the most in Olympic history. Phelps earned significantly more gold medals at 23 than all other Olympians earned total, showing his dominance in the games. We find that of the most decorated Olympians, there is a clear number one in Michael Phelps, who has made history with his repeated Olympic success.
 
-12. How does GDP effect a country's performance?
+**12. How does GDP effect a country's performance?**
 
 ```{r}
 gdp <- read.csv('world_bank_gdp.csv', stringsAsFactors = FALSE, check.names = FALSE, fileEncoding = 'UTF-8-BOM')
