@@ -28,18 +28,34 @@ library(gganimate)
 ```
 
 ## Background
-The Olympic games are a worldwide phenomenon that that currently happen every two years and alternate between Winter and Summer events. Over 200 countries currently send athletes to compete in a myriad of sporting events. The creation of the Olympics were inspired by the ancient games held in Olympia, Greece from 8th century BC to 4th century AD. The first modern Olympic games were held in 1896 in Athens, Greece. In 2021 we will see the next games being hosted in Tokyo, Japan.
+The Olympic games are a worldwide phenomenon that that currently happen every two years and alternate between Winter and Summer events. Over 200 countries currently send athletes to compete in a myriad of sporting events. The creation of the Olympics were inspired by the ancient games held in Olympia, Greece from 8th century BC to 4th century AD. The first modern Olympic games were held in 1896 in Athens, Greece. In 2021 we will see the next games being hosted in Tokyo, Japan. The goal of this project is to observe trends and make connections on different aspects of the Olympics, like seeing what countries succeed, how factors like height and weight correlate with winning, what events have stuck around, and many more.
 
 ## Data Aquisition and Cleaning
 The main dataset used for this project is [120 Years of Olympic History](https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results?select=athlete_events.csv), obtained from Kaggle. A supplemental dataset, [GDP data from The World Bank](https://data.worldbank.org/indicator/NY.GDP.MKTP.CD), was added in order to bolster our analysis. In the Olympic dataset, there are two data files. One is the main file, containing information from the Olympic Games from Athens 1896 to Rio 2016. It contains Athlete ID, name, sex, age, height, weight, team, country code, Olympic game, season, year, city, sport, event, and medal won. The second file gives the full country name for each country code used in the main dataset. This dataset is in tidy format. Since the Olympic dataset was very rich, it was decided that each team member would individually clean and filter the data to fit their analyses. The GDP data is a csv file containing the GDP of countries (in USD) from 1960 to 2019. This dataset will allow us to also evaluate how a country's economy effects the Olympics. The GDP data is not in a tidy format, since years are used as columns. In addition, many of the country names and country codes used in the GDP file did not match the Olympics dataset. These issue had to be resolved in order to merge the datasets and perform analyses. 
 
-## Exploratory Analysis
+## Questions Raised
+The following questions will be investigated in this report:
 
-## Vizualizing the Data and Questions Raised
+1. How are medals distributed among countries over the history of the games?
+2. How does hosting the Olympics correlate with the host country winning medals?
+3. How has the gender gap changed over time?
+4. Are there any missing years, if so, why?
+5. Has participation in the Olympics changed after the split of Winter and Summer games in 1992?
+6. How has age of participants changed over time and across seasons?
+7. Is the a correlation of height and weight in events?
+8. How do countries perform in Summer vs Winter?
+9. How do the Individual Olympic Athletes perform?
+10. What Olympic events have stayed around, which have been removed?
+11. Who are the most decorated Olympians?
+12. How does GDP effect a country's performance?
+
+## Exploration and Vizualization through Questions Raised
+
+Here, we will dive into exploring, visualizing, and answering the questions proposed in this project.
 
 **1. How are medals distributed among countries over the history of the games?**
 
-In order to effectively determine the medal distribution trends for different countries, the data must first be cleaned. There are several countries that have multiple versions (appended number or old name), so these need to be conmbined into single instances. We are alos only interested in the Country, Year, Season, Medal and City columns as these are the only metrics that relate to the country and the medal count. Finally, we use the World map data which contains country names along with their coordinates for mapping. Since the Olympics dataset has lots of team names that are not country names (boat names, independent athletes, clubs, etc.), so when it is joined with the world data, it filters out any team that does not represent a country.
+In order to effectively determine the medal distribution trends for different countries, the data must first be cleaned. There are several countries that have multiple versions (appended number or old name), so these need to be combined into single instances. We are alos only interested in the Country, Year, Season, Medal and City columns as these are the only metrics that relate to the country and the medal count. Finally, we use the World map data which contains country names along with their coordinates for mapping. Since the Olympics dataset has lots of team names that are not country names (boat names, independent athletes, clubs, etc.), so when it is joined with the world data, it filters out any team that does not represent a country.
 ```{r}
 data <- readr::read_csv('athlete_events.csv')
 
@@ -207,6 +223,7 @@ host_v_total %>%
   facet_wrap(~Team) + 
   scale_fill_manual(values=cbPalette)
 ```
+
 It can be shown that nearly every country performs better when they are the host country. One clear exception is the USA. This is probably due to the fact that the USA has hosted 2 olympics games – 1 summer and 1 winter. Since the US performs much better in summer than winter, this hurt their average number of medals for years they hosted.
 
 
@@ -407,7 +424,6 @@ avg_age <- ggplot(data = athlete_events_age, aes(x = as.factor(Year), y = age)) 
   geom_histogram(stat = "identity", bins = 35) +
   theme(axis.text.x = element_text(angle = 90)) +
   xlab("Year") + ylab("Average Age of Olympian")
-ggsave(filename = "avg_age.png", avg_age, path = "~/Downloads/")
 
 #looking at the average age by season
 athlete_events_season <- athlete_events %>%
@@ -471,6 +487,7 @@ head(weight,10)
 ggplot(height,aes(x=Height,y=Total))+geom_bar(stat = "identity")
 ggplot(weight,aes(x=Weight,y=Total))+geom_bar(stat = "identity")
 ```
+
 I learned that a competitor with a height of 175 cm in the Olympics wins more medals than people who are taller or shorter than the 175 cm middle value. For the weight it appears that people who are on the lighter side meaning between 60-80 kgs is more likely to win than people weighing more than 100 kgs.
 
 **8. How do countries perform in Summer vs Winter?**
@@ -540,6 +557,7 @@ ggplot(Totals6,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(
 ggplot(Totals7,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
 ggplot(Totals8,aes(x=Team,y=`Summer Total`,fill=`Winter Total`)) + geom_bar(aes(),position = "dodge", stat = "identity") + theme(axis.text.x = element_text(angle=90))
 ```
+
 I learned that there are a lot more countries that have or still currently participate in the summer Olympics compared to the winter Olympics. Some countries that do not do as well in one of the Olympics could do really well in the other Olympics. In some cases a country may do well in both of the Olympics.
 
 **9. How do the Individual Olympic Athletes perform?**
@@ -619,7 +637,7 @@ discont_events <- anti_join(before2000, after2000, by= "Event")
 head(discont_events)
 ```
 
-There are quite a few events that were removed over the years but there are also events that have been removed and reintroduced. Some of the discontinued events include Art Competitions (1912-1948),Tug-Of-War Men's Tug-Of-War(1900-1920),Military Ski Patrol Men's Military Ski Patrol.
+There are quite a few events that were removed over the years but there are also events that have been removed and reintroduced. Some of the discontinued events include Art Competitions (1912-1948), Men's Tug-Of-War(1900-1920), Men's Military Ski Patrol.
 
 
 **11. Who are the most decorated Olympians?**
@@ -734,3 +752,24 @@ Looking at the first graph, it is seen that there is a weak positive linear corr
 The second graph is the same as the first, with the exception that the United States is removed. By examining this graph, we still see that there is only a weak positive correlation between GDP and the number of medals won. With the points more readable now, some comparisons can be made. Looking at Cuba and Japan, we see that they, on average, earn approximately the same amount of medals at each Olympic Games. Even though they have similar medal counts, there is a stark difference in the GDP of these two countries. Japan's average GDP is around 3.5 trillion dollars and Cuba's average GDP is 3.7 billion dollars, meaning Japan's GDP is approximately 1000 times larger than Cuba's. Next, we will look at Russia and China. Russia has the largest number of medals won per Olympic games excluding the US, with just over 125 on average. China averages just above 25 medals per Olympics. Russia wins about 100 medal more on average, despite having a third (~ 1 trillion USD) the GDP of China (~ 3 trillion USD). Some countries, like the UK and France, appear to closely follow the regression line like the US and and have positively correlated GDP and medal counts. Overall, there is a lot of variation between the GDP and number of medals won in the Olympics. As a result, GDP is not necessarily a good measure of Olympic success.
 
 ## Conclusion
+The Olympics provides a very rich pool of data for us to work with. As shown by our various analyses, there is much to be explored in this dataset as evidenced by the variety of questions proposed. To highlight some of our findings, some countries, like the US, are very consistent performers in the games. Other countries like Germany and China, tend to be inconsistent for a myriad of reasons. Additionally, countries tend to perform better when hosting the games. It also seems that as time has progressed, the gender gap in participation has shrunk considerably. We also saw that those who weight closer to 75 kg won more medals than those who were significantly above or under a weight of 75 kg. The summer games have had a history higher attendance than the winter games. It is also noteworthy that only five members of the Individual Olympic Athletes team have been able to win a medal of any kind. There are also some strange events that have been removed, like the Tug-Of-War in 1920. Of all Olympians, it was seen that one stands out in sheer medal count, and his name is Michael Phelps. As a final note, it was seen that GDP is not a strong indicator of how strong a country will perform in the Olympics.
+
+## Personal Contributions
+Matthew Eisner - Responsible for Questions 11 and 12, wrote the Introduction, Data Aquisition, and Conclusion sections. 
+
+Jeffrey Kinard - Responsible for Questions 1 and 2, formatted and helped fix errors in the report
+
+Patrick Origer - Responsible for Questions 3 and 4.
+
+Zachary Johnson - Responsible for Questions 5 and 6.
+
+Muhammad Idris - Responsible for Questions 9 and 10.
+
+Cody Nielsen - Responsible for Questions 7 and 8.
+
+## References
+120 Years of Olympic History. (n.d.). Kaggle: Your Machine Learning and Data Science Community. https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results?select=athlete_events.csv
+
+Ancient Olympic Games. (n.d.). The International Olympic Committee. https://www.olympic.org/ancient-olympic-games
+
+GDP (current US$). (n.d.). The World Bank. https://data.worldbank.org/indicator/NY.GDP.MKTP.CD
